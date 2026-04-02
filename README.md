@@ -4,9 +4,11 @@
 
 ---
 
-## 🚀 Live Demo
+## 🚀 Live App
 
-Open `healthguard_triage.html` directly in any browser — no installation, no server needed.
+### 👉 [CLICK HERE TO OPEN THE APP](https://anishastiker01.github.io/healthguard-ai-triage/) 👈
+
+> Opens directly in your browser — no installation, no server, no setup needed.
 
 ---
 
@@ -24,8 +26,6 @@ HealthGuard is a real-time patient health triage system that:
 
 ## 🧠 What Makes It Truly Agentic?
 
-Most AI health apps send one prompt and get one answer. HealthGuard is different.
-
 | Feature | Traditional AI | HealthGuard Agentic AI |
 |---|---|---|
 | Tool call order | Hardcoded | **Claude decides** |
@@ -33,8 +33,6 @@ Most AI health apps send one prompt and get one answer. HealthGuard is different
 | Which tools run | Scripted | **Claude picks based on findings** |
 | Replanning | Never | **Claude adapts mid-loop** |
 | API calls | 1 total | **Multiple — one per loop** |
-
-Claude receives the patient vitals and a set of medical tools. It then **autonomously decides** which tools to call, in what order, and when it has gathered enough evidence to make a final clinical decision — without any hardcoded steps.
 
 ---
 
@@ -56,22 +54,11 @@ Wearable Device
 ┌─────────────────────────────────────┐
 │        Claude Agentic Loop          │
 │                                     │
-│  Claude receives vitals + tools     │
-│         │                           │
-│         ▼                           │
-│   🧠 THINK — What should I check?  │
-│         │                           │
-│         ▼                           │
-│   ⚡ CALL TOOL — Claude's choice    │
-│         │                           │
-│         ▼                           │
-│   👁 OBSERVE — Read result          │
-│         │                           │
-│         ▼                           │
-│   🔁 LOOP — until Claude decides    │
-│         │     it has enough info    │
-│         ▼                           │
-│   ✅ FINAL DECISION                 │
+│  🧠 THINK — What should I check?   │
+│  ⚡ CALL TOOL — Claude's choice     │
+│  👁 OBSERVE — Read result           │
+│  🔁 LOOP — until Claude is ready    │
+│  ✅ FINAL DECISION                  │
 └────────┬────────────────────────────┘
          │
          ▼
@@ -97,14 +84,14 @@ Wearable Device
 | Stress | 1–4 / 10 |
 | Steps | 7,000+ |
 
-→ AI provides personalized sleep, diet, hydration, and exercise advice.
+→ AI gives personalized sleep, diet, hydration and exercise advice.
 
 ---
 
 ### ⚠️ Stage 2 — Medium Deviation (Medical Consultation)
 Two or more moderate flags detected.
 
-→ AI recommends nearby specialist doctors and sends the patient's health report directly to them.
+→ AI recommends nearby specialist doctors and sends the health report.
 
 ```json
 [
@@ -123,39 +110,30 @@ Any life-threatening vital detected:
 - BP > 180 mmHg
 - Temperature > 39.5°C
 
-→ AI immediately dispatches nearest ambulance, transmits live vitals to the receiving hospital ER.
+→ AI immediately dispatches nearest ambulance and transmits live vitals to ER.
 
 ---
 
 ## 🛠️ Tools Available to Claude
 
-Claude autonomously decides which of these to call:
-
 | Tool | What It Does |
 |---|---|
-| `check_vital_ranges` | Flags abnormal vitals with severity (NORMAL / ELEVATED / CRITICAL) |
+| `check_vital_ranges` | Flags abnormal vitals with severity |
 | `compute_health_score` | Returns overall health score 0–100 |
-| `detect_risk_pattern` | Detects clinical risk patterns (hypertensive crisis, hypoxia, etc.) |
+| `detect_risk_pattern` | Detects clinical risk patterns |
 | `classify_triage_stage` | Classifies patient into Stage 1, 2, or 3 |
-| `get_specialist_recommendations` | Returns matched specialist doctors for Stage 2 |
-| `dispatch_emergency` | Dispatches ambulance for Stage 3 with ETA and ER details |
+| `get_specialist_recommendations` | Returns matched specialist doctors |
+| `dispatch_emergency` | Dispatches ambulance with ETA |
 
 ---
 
 ## 📡 Supported Devices
 
 ### ⌚ Wearables
-- Fitbit Sense 2 (BLE 5.2)
-- Apple Watch Ultra (BLE 5.0)
-- Garmin Vívosmart 5 (ANT+)
-- Samsung Galaxy Watch 6 (BLE 5.2)
+- Fitbit Sense 2 · Apple Watch Ultra · Garmin Vívosmart 5 · Samsung Galaxy Watch 6
 
-### 🏥 Clinical Health Monitoring Systems
-- Philips IntelliVue MX40 (HL7/FHIR)
-- Omron HeartGuide BP Monitor (MQTT)
-- Masimo Root Monitor (IEEE 11073)
-- Biobeat Wireless Patch Monitor (HL7/FHIR)
-- GE CARESCAPE B650 (IEEE 11073)
+### 🏥 Clinical Monitors
+- Philips IntelliVue MX40 · Omron HeartGuide · Masimo Root · Biobeat Patch · GE CARESCAPE B650
 
 ---
 
@@ -167,49 +145,13 @@ Claude autonomously decides which of these to call:
 | AI Engine | Claude Sonnet (Anthropic API) |
 | AI Pattern | True Agentic — Tool Use API |
 | Device Protocol | Simulated BLE 5.2 / HL7-FHIR |
-| Deployment | GitHub Pages (static, no server) |
-
----
-
-## 📁 Project Structure
-
-```
-healthguard-ai-triage/
-├── healthguard_triage.html    ← Entire app (single file)
-└── README.md                  ← This file
-```
-
----
-
-## 🔧 Setup & Usage
-
-### Option 1 — Open directly (no API key)
-1. Download `healthguard_triage.html`
-2. Double-click to open in any browser
-3. Select a device → Click **Collect & Run Agent**
-4. Local rule engine runs and shows full triage result
-
-### Option 2 — Full Agentic Mode (with API key)
-1. Get your API key from [console.anthropic.com](https://console.anthropic.com)
-2. Open the app → paste key in the **API Key** field
-3. Select a device → Click **Collect & Run Agent**
-4. Watch Claude autonomously call tools, reason, and decide
-
----
-
-## 🔐 API Key Note
-
-The API key is used **only in your browser** — it is never stored, never sent to any server other than Anthropic's API directly. You can also leave it blank to use the local fallback engine.
+| Deployment | GitHub Pages |
 
 ---
 
 ## 👨‍💻 Author
 
-Built as a final year project demonstrating **Agentic AI in Healthcare**.
-
-- **Technology:** Anthropic Claude AI — Tool Use API
-- **Domain:** Health Informatics / AI in Medicine
-- **Pattern:** ReAct (Reasoning + Acting) with Anthropic native tool use
+**anishastiker01** — Final year project demonstrating Agentic AI in Healthcare.
 
 ---
 
