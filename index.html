@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HealthGuard — Agentic AI Triage</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:#05080f; --surface:#0b1120; --card:#101827; --border:#1e2d45;
+    --accent:#00d4ff; --accent2:#0088ff; --green:#00ff88; --yellow:#ffc832;
+    --red:#ff2d55; --text:#e8f0fe; --muted:#5a7a9a;
+    --font-display:'Rajdhani',sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+    --font-body:'Outfit',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+  .container{max-width:1100px;margin:0 auto;padding:24px 20px;position:relative;z-index:1;}
+  .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+  .logo{display:flex;align-items:center;gap:12px;}
+  .logo-icon{width:44px;height:44px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 20px rgba(0,212,255,0.4);}
+  .logo-text{font-family:var(--font-display);font-size:26px;font-weight:700;letter-spacing:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .logo-sub{font-size:11px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;}
+  .ble-status{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:999px;padding:8px 16px;font-family:var(--font-mono);font-size:12px;color:var(--muted);}
+  .ble-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:all 0.3s;}
+  .ble-dot.connected{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse-dot 2s infinite;}
+  @keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:0.4;}}
+  .wearable-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px;position:relative;overflow:hidden;}
+  .wearable-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scan-line 3s linear infinite;}
+  @keyframes scan-line{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+  .panel-title{font-family:var(--font-display);font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+  .panel-title span{color:var(--accent);}
+  .vitals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin-bottom:20px;}
+  .vital-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;transition:border-color 0.3s;}
+  .vital-card.live{border-color:rgba(0,212,255,0.3);}
+  .vital-label{font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+  .vital-value{font-family:var(--font-display);font-size:32px;font-weight:700;line-height:1;color:var(--accent);transition:color 0.5s;}
+  .vital-unit{font-size:12px;color:var(--muted);margin-top:4px;font-family:var(--font-mono);}
+  .vital-bar{position:absolute;bottom:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:0 3px 3px 0;transition:width 1s ease;}
+  .ecg-wave{height:40px;margin:10px 0;}
+  .ecg-svg{width:100%;height:100%;}
+  .input-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px;}
+  .input-group{display:flex;flex-direction:column;gap:6px;}
+  .input-group label{font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+  .input-group input{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--font-mono);font-size:14px;outline:none;transition:border-color 0.2s;width:100%;}
+  .input-group input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,212,255,0.1);}
+  .btn-row{display:flex;gap:12px;flex-wrap:wrap;}
+  .btn{padding:12px 24px;border-radius:10px;border:none;cursor:pointer;font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:1px;transition:all 0.2s;}
+  .btn-primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#000;box-shadow:0 4px 20px rgba(0,212,255,0.3);}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(0,212,255,0.5);}
+  .btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+  .btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--muted);}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+  .preset-btn{padding:7px 16px;border-radius:999px;border:1px solid;cursor:pointer;font-family:var(--font-mono);font-size:11px;letter-spacing:1px;background:transparent;transition:all 0.2s;}
+  .preset-btn.s1{border-color:var(--green);color:var(--green);}
+  .preset-btn.s1:hover{background:rgba(0,255,136,0.1);}
+  .preset-btn.s2{border-color:var(--yellow);color:var(--yellow);}
+  .preset-btn.s2:hover{background:rgba(255,200,50,0.1);}
+  .dev-btn{transition:all 0.2s;}
+  .log-panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;font-family:var(--font-mono);font-size:12px;height:90px;overflow-y:auto;margin-bottom:20px;line-height:1.7;}
+  .log-line{color:var(--muted);}
+  .log-line.ok{color:var(--green);}
+  .log-line.warn{color:var(--yellow);}
+  .log-line.error{color:var(--red);}
+  .log-line.info{color:var(--accent);}
+  /* AGENT PANEL */
+  .agent-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px;display:none;position:relative;overflow:hidden;}
+  .agent-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent2),var(--accent),var(--green));animation:scan-line 2s linear infinite;}
+  .agent-steps{max-height:520px;overflow-y:auto;padding-right:4px;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .step-card{border-radius:10px;padding:14px 16px;margin-bottom:10px;animation:fadeUp 0.35s ease forwards;}
+  .step-thought {border:1px solid rgba(0,212,255,0.25); background:rgba(0,212,255,0.04);}
+  .step-tool    {border:1px solid rgba(255,200,50,0.3);  background:rgba(255,200,50,0.04);}
+  .step-result  {border:1px solid rgba(0,255,136,0.25);  background:rgba(0,255,136,0.04);}
+  .step-decision{border:1px solid rgba(255,45,85,0.35);  background:rgba(255,45,85,0.05);}
+  .step-header{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap;}
+  .step-tag{font-family:var(--font-mono);font-size:10px;letter-spacing:2px;color:var(--muted);}
+  .step-title{font-size:13px;color:var(--text);font-weight:600;}
+  .step-tool-badge{font-family:var(--font-mono);font-size:10px;color:var(--accent);background:rgba(0,212,255,0.1);padding:2px 8px;border-radius:4px;margin-left:auto;}
+  .step-body{font-size:13px;line-height:1.75;color:var(--text);}
+  .step-body code{color:var(--accent);font-family:var(--font-mono);font-size:12px;background:rgba(0,212,255,0.08);padding:1px 5px;border-radius:3px;}
+  .agent-thinking{display:none;align-items:center;gap:10px;padding:12px 16px;font-family:var(--font-mono);font-size:12px;color:var(--accent);background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:8px;margin-bottom:10px;}
+  .spinner{width:16px;height:16px;border:2px solid rgba(0,212,255,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-overlay{display:none;align-items:center;justify-content:center;gap:12px;padding:20px;color:var(--accent);font-family:var(--font-mono);font-size:13px;}
+  .loading-overlay .spinner{width:20px;height:20px;}
+  /* RESULT */
+  .result-panel{border-radius:16px;padding:28px;display:none;animation:fadeUp 0.5s ease forwards;}
+  .result-panel.stage1{background:linear-gradient(135deg,rgba(0,255,136,0.05),rgba(0,255,136,0.02));border:1px solid rgba(0,255,136,0.3);}
+  .result-panel.stage2{background:linear-gradient(135deg,rgba(255,200,50,0.05),rgba(255,200,50,0.02));border:1px solid rgba(255,200,50,0.3);}
+  .result-panel.stage3{background:linear-gradient(135deg,rgba(255,45,85,0.07),rgba(255,45,85,0.02));border:1px solid rgba(255,45,85,0.4);animation:fadeUp 0.5s ease forwards,pulse-red 1.5s ease infinite;}
+  @keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(255,45,85,0);}50%{box-shadow:0 0 30px 4px rgba(255,45,85,0.2);}}
+  .stage-badge{display:inline-flex;align-items:center;gap:10px;padding:8px 18px;border-radius:999px;font-family:var(--font-display);font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;}
+  .stage-badge.s1{background:rgba(0,255,136,0.15);color:var(--green);border:1px solid rgba(0,255,136,0.3);}
+  .stage-badge.s2{background:rgba(255,200,50,0.15);color:var(--yellow);border:1px solid rgba(255,200,50,0.3);}
+  .stage-badge.s3{background:rgba(255,45,85,0.15);color:var(--red);border:1px solid rgba(255,45,85,0.3);}
+  .result-title{font-family:var(--font-display);font-size:22px;font-weight:700;margin-bottom:6px;}
+  .result-subtitle{color:var(--muted);font-size:14px;margin-bottom:20px;}
+  .health-score-row{display:flex;align-items:center;gap:16px;margin-bottom:20px;}
+  .health-score-circle{width:72px;height:72px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-display);font-size:24px;font-weight:700;border:3px solid;flex-shrink:0;}
+  .health-score-circle .score-label{font-size:9px;font-family:var(--font-mono);letter-spacing:1px;font-weight:400;margin-top:-2px;}
+  .health-score-circle.s1{border-color:var(--green);color:var(--green);}
+  .health-score-circle.s2{border-color:var(--yellow);color:var(--yellow);}
+  .health-score-circle.s3{border-color:var(--red);color:var(--red);}
+  .ai-response{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;font-size:14px;line-height:1.8;white-space:pre-wrap;color:var(--text);}
+  .doctors-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:16px;}
+  .doctor-card{background:var(--surface);border:1px solid rgba(255,200,50,0.2);border-radius:12px;padding:16px;}
+  .doctor-name{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--yellow);margin-bottom:4px;}
+  .doctor-spec{font-size:13px;color:var(--muted);margin-bottom:10px;}
+  .doctor-dist{font-family:var(--font-mono);font-size:12px;color:var(--accent);}
+  .btn-send-report{margin-top:12px;width:100%;padding:9px;border-radius:8px;border:1px solid rgba(255,200,50,0.4);background:rgba(255,200,50,0.08);color:var(--yellow);cursor:pointer;font-family:var(--font-mono);font-size:12px;letter-spacing:1px;transition:all 0.2s;}
+  .btn-send-report:hover{background:rgba(255,200,50,0.15);}
+  .btn-send-report.sent{color:var(--green);border-color:rgba(0,255,136,0.4);background:rgba(0,255,136,0.08);cursor:default;}
+  .ambulance-card{background:rgba(255,45,85,0.08);border:1px solid rgba(255,45,85,0.4);border-radius:12px;padding:20px;margin-top:16px;display:flex;align-items:center;gap:20px;}
+  .amb-icon{font-size:48px;animation:shake 0.4s ease infinite alternate;}
+  @keyframes shake{from{transform:rotate(-3deg);}to{transform:rotate(3deg);}}
+  .amb-details{flex:1;}
+  .amb-title{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--red);margin-bottom:8px;}
+  .amb-row{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-bottom:4px;}
+  .amb-row span{color:var(--text);}
+  .btn-confirm-amb{padding:12px 20px;border-radius:10px;border:none;background:var(--red);color:#fff;font-family:var(--font-display);font-size:15px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all 0.2s;white-space:nowrap;}
+  .btn-confirm-amb:hover{transform:scale(1.03);box-shadow:0 0 20px rgba(255,45,85,0.5);}
+  ::-webkit-scrollbar{width:6px;} ::-webkit-scrollbar-track{background:var(--surface);} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  @media(max-width:600px){.vitals-grid{grid-template-columns:repeat(2,1fr);}.ambulance-card{flex-direction:column;text-align:center;}.header{flex-direction:column;gap:12px;}}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🫀</div>
+      <div>
+        <div class="logo-text">HEALTHGUARD</div>
+        <div class="logo-sub">Agentic AI — Real Tool-Use Loop</div>
+      </div>
+    </div>
+    <div class="ble-status">
+      <div class="ble-dot" id="bleDot"></div>
+      <span id="bleText">DISCONNECTED</span>
+    </div>
+  </div>
+
+  <!-- VITALS -->
+  <div class="wearable-panel">
+    <div class="panel-title">📡 <span>Live Wearable Feed</span> — Real-time Sensor Data</div>
+    <div class="vitals-grid">
+      <div class="vital-card" id="vc-hr"><div class="vital-label">❤️ Heart Rate</div><div class="vital-value" id="live-hr">--</div><div class="vital-unit">bpm</div><div class="vital-bar" id="bar-hr" style="width:0%"></div></div>
+      <div class="vital-card" id="vc-spo2"><div class="vital-label">🫁 SpO2</div><div class="vital-value" id="live-spo2">--</div><div class="vital-unit">%</div><div class="vital-bar" id="bar-spo2" style="width:0%"></div></div>
+      <div class="vital-card" id="vc-bp"><div class="vital-label">💉 Blood Pressure</div><div class="vital-value" id="live-bp">--</div><div class="vital-unit">mmHg systolic</div><div class="vital-bar" id="bar-bp" style="width:0%"></div></div>
+      <div class="vital-card" id="vc-temp"><div class="vital-label">🌡️ Temperature</div><div class="vital-value" id="live-temp">--</div><div class="vital-unit">°C</div><div class="vital-bar" id="bar-temp" style="width:0%"></div></div>
+      <div class="vital-card" id="vc-sleep"><div class="vital-label">😴 Sleep</div><div class="vital-value" id="live-sleep">--</div><div class="vital-unit">hrs last night</div><div class="vital-bar" id="bar-sleep" style="width:0%"></div></div>
+      <div class="vital-card" id="vc-water"><div class="vital-label">💧 Water Intake</div><div class="vital-value" id="live-water">--</div><div class="vital-unit">litres today</div><div class="vital-bar" id="bar-water" style="width:0%"></div></div>
+      <div class="vital-card" id="vc-steps"><div class="vital-label">👟 Steps</div><div class="vital-value" id="live-steps">--</div><div class="vital-unit">steps today</div><div class="vital-bar" id="bar-steps" style="width:0%"></div></div>
+      <div class="vital-card" id="vc-stress"><div class="vital-label">🧠 Stress</div><div class="vital-value" id="live-stress">--</div><div class="vital-unit">/ 10</div><div class="vital-bar" id="bar-stress" style="width:0%"></div></div>
+    </div>
+    <div class="ecg-wave"><svg class="ecg-svg" viewBox="0 0 600 40" preserveAspectRatio="none"><polyline id="ecgLine" points="" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity="0.7"/></svg></div>
+  </div>
+
+  <!-- DEVICE -->
+  <div class="input-section">
+    <div class="panel-title">📲 <span>Wearable Device</span> — Auto Data Collection</div>
+    <div style="margin-bottom:16px;font-size:13px;color:var(--muted);line-height:1.9;">Select a device. Vitals are auto-collected. Claude then autonomously decides which tools to run.</div>
+
+    <div style="margin-bottom:8px;font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:2px;">⌚ WEARABLES</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+      <button class="preset-btn s1 dev-btn" id="devBtn0" onclick="selectDevice(0)">⌚ Fitbit Sense 2</button>
+      <button class="preset-btn s1 dev-btn" id="devBtn1" onclick="selectDevice(1)">🍎 Apple Watch Ultra</button>
+      <button class="preset-btn s1 dev-btn" id="devBtn2" onclick="selectDevice(2)">🏃 Garmin Vívosmart 5</button>
+      <button class="preset-btn s1 dev-btn" id="devBtn3" onclick="selectDevice(3)">💠 Samsung Galaxy Watch 6</button>
+    </div>
+    <div style="margin-bottom:8px;font-family:var(--font-mono);font-size:11px;color:var(--yellow);letter-spacing:2px;">🏥 HEALTH MONITORING SYSTEMS</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+      <button class="preset-btn s2 dev-btn" id="devBtn4" onclick="selectDevice(4)">🩺 Philips IntelliVue MX40</button>
+      <button class="preset-btn s2 dev-btn" id="devBtn5" onclick="selectDevice(5)">💊 Omron HeartGuide BP</button>
+      <button class="preset-btn s2 dev-btn" id="devBtn6" onclick="selectDevice(6)">🔬 Masimo Root Monitor</button>
+      <button class="preset-btn s2 dev-btn" id="devBtn7" onclick="selectDevice(7)">🫀 Biobeat Patch Monitor</button>
+      <button class="preset-btn s2 dev-btn" id="devBtn8" onclick="selectDevice(8)">🏨 GE CARESCAPE B650</button>
+    </div>
+
+    <div id="deviceInfoBar" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-family:var(--font-mono);font-size:12px;flex-wrap:wrap;gap:16px;">
+      <span>📡 <span id="dName" style="color:var(--accent)"></span></span>
+      <span>🔋 <span id="dBatt" style="color:var(--green)"></span></span>
+      <span>📶 <span id="dSignal" style="color:var(--green)"></span></span>
+      <span>🆔 <span id="dId" style="color:var(--muted)"></span></span>
+    </div>
+
+    <div class="input-group" style="margin-bottom:16px;max-width:440px;">
+      <label>🔑 Anthropic API Key — required for real agentic loop</label>
+      <input type="password" id="apiKey" placeholder="sk-ant-..."/>
+    </div>
+
+    <div class="log-panel" id="logPanel">
+      <div class="log-line info">[SYSTEM] HealthGuard — Real Agentic Tool-Use. Claude picks its own tools.</div>
+      <div class="log-line">[SYSTEM] Select a device + add API key, then click Collect &amp; Run Agent.</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="analyzeBtn" onclick="runAnalysis()">🤖 Collect &amp; Run Agent</button>
+      <button class="btn btn-ghost" onclick="resetAll()">↺ Reset</button>
+    </div>
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <span id="loadingText">Scanning...</span>
+    </div>
+  </div>
+
+  <!-- AGENT PANEL -->
+  <div class="agent-panel" id="agentPanel">
+    <div class="panel-title" style="margin-bottom:4px;">
+      🤖 <span>Claude Agent</span> — Live Autonomous Tool-Use Loop
+      <span id="loopCounter" style="margin-left:auto;font-size:10px;color:var(--muted);letter-spacing:1px;font-family:var(--font-mono);"></span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;font-family:var(--font-mono);">
+      Claude is autonomously choosing which tools to call based on what it finds. No hardcoded order.
+    </div>
+    <div class="agent-thinking" id="agentThinking">
+      <div class="spinner"></div>
+      <span id="thinkingText">Claude is reasoning...</span>
+    </div>
+    <div class="agent-steps" id="agentSteps"></div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result-panel" id="resultPanel">
+    <div class="stage-badge" id="stageBadge"></div>
+    <div class="result-title" id="resultTitle"></div>
+    <div class="result-subtitle" id="resultSubtitle"></div>
+    <div class="health-score-row">
+      <div class="health-score-circle" id="scoreCircle">
+        <span id="scoreNum">--</span>
+        <span class="score-label">SCORE</span>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">Health Score</div>
+        <div style="height:8px;background:var(--surface);border-radius:999px;overflow:hidden;">
+          <div id="scoreBar" style="height:100%;border-radius:999px;transition:width 1.5s ease;width:0%;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="ai-response" id="aiResponse"></div>
+    <div id="extraContent"></div>
+  </div>
+
+</div>
+<script>
+// ================================================================
+//  DATA
+// ================================================================
+const DEVICES = [
+  {name:'Fitbit Sense 2',         id:'FB-S2-4821', firmware:'v6.1.3',      type:'wearable'},
+  {name:'Apple Watch Ultra',       id:'AW-UL-9X02', firmware:'watchOS 11.2',type:'wearable'},
+  {name:'Garmin Vívosmart 5',      id:'GX-VS5-200', firmware:'v4.80',       type:'wearable'},
+  {name:'Samsung Galaxy Watch 6',  id:'SGW-6-3317', firmware:'v3.0.0.1',   type:'wearable'},
+  {name:'Philips IntelliVue MX40', id:'PH-MX40-881',firmware:'SW 02.01',   type:'monitor'},
+  {name:'Omron HeartGuide BP',     id:'OM-HG-5502', firmware:'v2.3.1',     type:'monitor'},
+  {name:'Masimo Root Monitor',     id:'MS-ROOT-774',firmware:'v7.6.0.1',   type:'monitor'},
+  {name:'Biobeat Patch Monitor',   id:'BB-PATCH-339',firmware:'v1.9.4',    type:'monitor'},
+  {name:'GE CARESCAPE B650',       id:'GE-B650-102',firmware:'v2.1 SP4',   type:'monitor'},
+];
+
+const DOCTORS_DB = {
+  Cardiology:        [{name:'Dr. Arun Mehta',  specialty:'Cardiology',                distance:'1.8 km',hospital:'Apollo Cardiac Centre'},
+                      {name:'Dr. Priya Sharma', specialty:'Interventional Cardiology', distance:'3.2 km',hospital:'CARE Hospitals'}],
+  Pulmonology:       [{name:'Dr. Vikram Rao',   specialty:'Pulmonology & Critical Care',distance:'2.4 km',hospital:'Yashoda Hospital'}],
+  Neurology:         [{name:'Dr. Meena Iyer',   specialty:'Neurology',                distance:'2.1 km',hospital:'KIMS Hospital'}],
+  Endocrinology:     [{name:'Dr. Suresh Babu',  specialty:'Endocrinology',            distance:'3.8 km',hospital:'Apollo Spectra'}],
+  'Internal Medicine':[{name:'Dr. Sunita Patel',specialty:'Internal Medicine',        distance:'0.9 km',hospital:'Maxcure Hospital'}],
+  General:           [{name:'Dr. Rajesh Kumar', specialty:'General Physician',        distance:'1.5 km',hospital:'Continental Hospital'}],
+};
+
+// ================================================================
+//  STATE
+// ================================================================
+let selectedDevice = null;
+let wearableInterval = null;
+let agentLoopCount = 0;
+
+// ================================================================
+//  TOOL DEFINITIONS — Claude reads these and decides what to call
+// ================================================================
+const TOOL_DEFS = [
+  {
+    name:'check_vital_ranges',
+    description:'Scan all patient vitals against clinical thresholds. Returns flags for each abnormal reading (NORMAL / ELEVATED / CRITICAL). Call this first to get an overview.',
+    input_schema:{type:'object',properties:{reason:{type:'string',description:'Why you are calling this'}},required:['reason']}
+  },
+  {
+    name:'count_severity_flags',
+    description:'Count how many CRITICAL vs MODERATE flags exist. Returns critical_count and moderate_count. Use to decide triage stage.',
+    input_schema:{type:'object',properties:{reason:{type:'string'}},required:['reason']}
+  },
+  {
+    name:'compute_health_score',
+    description:'Compute a 0–100 objective health score across all vitals combined. 100 = perfect. Call to quantify overall severity.',
+    input_schema:{type:'object',properties:{reason:{type:'string'}},required:['reason']}
+  },
+  {
+    name:'check_cardiac_risk',
+    description:'Deep cardiac analysis: evaluates HR, BP, and SpO2 together for cardiovascular risk patterns. Call if HR or BP looks concerning.',
+    input_schema:{type:'object',properties:{reason:{type:'string'}},required:['reason']}
+  },
+  {
+    name:'check_respiratory_risk',
+    description:'Evaluates SpO2, stress, and sleep together for respiratory or neurological risk. Call if SpO2 is below 95%.',
+    input_schema:{type:'object',properties:{reason:{type:'string'}},required:['reason']}
+  },
+  {
+    name:'classify_triage_stage',
+    description:'Formally classify patient into Stage 1 (lifestyle), Stage 2 (consultation), or Stage 3 (emergency). Call when you have sufficient evidence.',
+    input_schema:{type:'object',properties:{reason:{type:'string'}},required:['reason']}
+  },
+  {
+    name:'get_specialist_recommendations',
+    description:'Get recommended specialist types based on abnormal vitals. Returns list of specialties. Call only when Stage 2 is confirmed.',
+    input_schema:{type:'object',properties:{reason:{type:'string'}},required:['reason']}
+  },
+  {
+    name:'dispatch_emergency_services',
+    description:'Dispatch ambulance and alert nearest ER. Returns unit ID and ETA. Call ONLY when Stage 3 is confirmed — this triggers real emergency protocol.',
+    input_schema:{type:'object',properties:{reason:{type:'string'}},required:['reason']}
+  },
+  {
+    name:'generate_final_report',
+    description:'Generate the patient triage report and close the agent loop. Call this LAST after stage is confirmed and interventions decided.',
+    input_schema:{
+      type:'object',
+      properties:{
+        stage:      {type:'number',  description:'Triage stage: 1, 2, or 3'},
+        score:      {type:'number',  description:'Health score 0–100'},
+        title:      {type:'string',  description:'Short result title'},
+        summary:    {type:'string',  description:'3–5 sentence clinical summary and recommendation for the patient'},
+        specialists:{type:'array', items:{type:'string'}, description:'Specialist types for Stage 2, e.g. ["Cardiology","Pulmonology"]'},
+        ambulance:  {type:'object',  description:'For Stage 3: {unit: string, eta_min: number, er: string}'}
+      },
+      required:['stage','score','title','summary']
+    }
+  }
+];
+
+// ================================================================
+//  LOCAL TOOL EXECUTOR
+// ================================================================
+function executeTool(name, input, vitals) {
+  const v = vitals;
+  switch(name) {
+    case 'check_vital_ranges': {
+      const out = [];
+      const chk = (cond, label, sev, val) => { if(cond) out.push(`${label}: ${sev} (${val})`); };
+      chk(v.hr>140||v.hr<45,   'HR',    'CRITICAL', v.hr+'bpm');
+      chk(v.hr>100&&v.hr<=140, 'HR',    'ELEVATED', v.hr+'bpm');
+      chk(v.spo2<90,           'SpO2',  'CRITICAL', v.spo2+'%');
+      chk(v.spo2<95&&v.spo2>=90,'SpO2', 'LOW',      v.spo2+'%');
+      chk(v.bp>180,            'BP',    'CRITICAL', v.bp+'mmHg');
+      chk(v.bp>130&&v.bp<=180, 'BP',    'ELEVATED', v.bp+'mmHg');
+      chk(v.temp>39.5,         'Temp',  'CRITICAL', v.temp+'°C');
+      chk(v.temp>37.2&&v.temp<=39.5,'Temp','ELEVATED',v.temp+'°C');
+      chk(v.sleep<3,           'Sleep', 'CRITICAL', v.sleep+'hrs');
+      chk(v.sleep<7&&v.sleep>=3,'Sleep','LOW',      v.sleep+'hrs');
+      chk(v.water<0.5,         'Water', 'CRITICAL', v.water+'L');
+      chk(v.water<1.5&&v.water>=0.5,'Water','LOW', v.water+'L');
+      chk(v.stress>=9,         'Stress','CRITICAL', v.stress+'/10');
+      chk(v.stress>=5&&v.stress<9,'Stress','HIGH',  v.stress+'/10');
+      chk(v.steps<1000,        'Steps', 'CRITICAL', v.steps);
+      chk(v.steps<7000&&v.steps>=1000,'Steps','LOW',v.steps);
+      return out.length ? 'Abnormal vitals:\n'+out.join('\n') : 'All vitals within normal range. No flags detected.';
+    }
+    case 'count_severity_flags': {
+      let c=0, m=0;
+      if(v.hr>140||v.hr<45||v.spo2<90||v.bp>180||v.temp>39.5||v.sleep<3||v.water<0.5||v.stress>=9) c++;
+      if(v.hr>100&&v.hr<=140) m++;
+      if(v.spo2<95&&v.spo2>=90) m++;
+      if(v.bp>130&&v.bp<=180) m++;
+      if(v.temp>37.2&&v.temp<=39.5) m++;
+      if(v.sleep<7&&v.sleep>=3) m++;
+      if(v.water<1.5&&v.water>=0.5) m++;
+      if(v.stress>=5&&v.stress<9) m++;
+      if(v.steps<7000&&v.steps>=1000) m++;
+      return `Critical flags: ${c} | Moderate flags: ${m}`;
+    }
+    case 'compute_health_score': {
+      let s=100;
+      const d=(val,glo,ghi,blo,bhi,pen)=>{ if(val<blo||val>bhi) s-=pen; else if(val<glo||val>ghi) s-=pen*0.5; };
+      d(v.hr,60,100,45,140,20); d(v.spo2,95,100,90,100,20); d(v.bp,90,130,60,180,15);
+      d(v.temp,36.1,37.2,35,39.5,15); d(v.sleep,7,9,3,12,10); d(v.water,1.5,3.5,0.5,10,10);
+      d(v.stress,0,4,0,8,5); d(v.steps,7000,20000,1000,50000,5);
+      return `Health Score: ${Math.max(0,Math.round(s))}/100`;
+    }
+    case 'check_cardiac_risk': {
+      const r=[];
+      if(v.hr>120) r.push('Tachycardia — rate exceeds safe threshold');
+      if(v.hr<55)  r.push('Bradycardia — rate dangerously low');
+      if(v.bp>160) r.push('Hypertensive crisis risk');
+      if(v.spo2<92) r.push('Low SpO2 may indicate cardiac compromise');
+      if(v.stress>=7&&v.bp>130) r.push('High stress + elevated BP = increased cardiac load');
+      return r.length ? 'Cardiac risks identified:\n'+r.join('\n') : 'No significant cardiac risk factors.';
+    }
+    case 'check_respiratory_risk': {
+      const r=[];
+      if(v.spo2<90) r.push('Severe hypoxemia — immediate oxygen required');
+      else if(v.spo2<95) r.push('Mild hypoxemia — close monitoring needed');
+      if(v.sleep<4&&v.spo2<95) r.push('Sleep deprivation + low SpO2 suggests possible sleep apnea');
+      if(v.stress>=8) r.push('High stress can cause hyperventilation');
+      return r.length ? 'Respiratory risks:\n'+r.join('\n') : 'Respiratory parameters acceptable.';
+    }
+    case 'classify_triage_stage': {
+      const crit = v.hr>140||v.hr<45||v.spo2<90||v.bp>180||v.temp>39.5||v.sleep<3||v.water<0.5||v.stress>=9;
+      const mods = [v.hr>100||v.hr<60, v.spo2<95, v.bp>130, v.temp>37.2, v.sleep<7, v.water<1.5, v.stress>=5, v.steps<7000].filter(Boolean).length;
+      if(crit)    return 'STAGE 3 — CRITICAL: Life-threatening values. Emergency dispatch required immediately.';
+      if(mods>=2) return 'STAGE 2 — MODERATE: Multiple abnormal vitals. Medical consultation required within 48h.';
+      return 'STAGE 1 — NORMAL: Minor deviations only. Lifestyle correction sufficient.';
+    }
+    case 'get_specialist_recommendations': {
+      const s=[];
+      if(v.hr>100||v.bp>130) s.push('Cardiology');
+      if(v.spo2<95) s.push('Pulmonology');
+      if(v.stress>=5||v.sleep<5) s.push('Neurology');
+      if(v.temp>37.5) s.push('Internal Medicine');
+      if(!s.length) s.push('General');
+      return `Recommended: ${s.join(', ')}`;
+    }
+    case 'dispatch_emergency_services': {
+      const u=['AMB-04','AMB-07','AMB-11','AMB-15'][Math.floor(Math.random()*4)];
+      const eta=Math.floor(Math.random()*5+3);
+      return `DISPATCHED ${u} | ETA ${eta} min | Vitals transmitted to Yashoda Hospital Emergency`;
+    }
+    case 'generate_final_report':
+      return `Report generated. Stage ${input.stage}, Score ${input.score}/100. Agent loop closing.`;
+    default:
+      return `Tool "${name}" not found.`;
+  }
+}
+
+// ================================================================
+//  DEVICE SELECTION
+// ================================================================
+function selectDevice(idx) {
+  selectedDevice = idx;
+  document.querySelectorAll('.dev-btn').forEach((b,i)=>{
+    b.style.background  = i===idx ? 'rgba(0,212,255,0.15)' : 'transparent';
+    b.style.borderColor = i===idx ? 'var(--accent)' : '';
+    b.style.color       = i===idx ? 'var(--accent)' : '';
+  });
+  const dev = DEVICES[idx];
+  const bar = document.getElementById('deviceInfoBar');
+  bar.style.display = 'flex';
+  document.getElementById('dName').textContent   = dev.name;
+  document.getElementById('dBatt').textContent   = dev.type==='monitor' ? 'AC Powered' : Math.floor(Math.random()*40+55)+'%';
+  document.getElementById('dSignal').textContent = dev.type==='monitor' ? ['HL7/FHIR','MQTT','IEEE 11073'][idx%3] : ['BLE 5.2','BLE 5.0','ANT+'][idx%3];
+  document.getElementById('dId').textContent = dev.id;
+  log('info', `[${dev.type==='monitor'?'HL7':'BLE'}] Selected: ${dev.name} (${dev.id})`);
+}
+
+// ================================================================
+//  VITALS GENERATION
+// ================================================================
+function generateRandomVitals() {
+  const roll = Math.random();
+  const prof = roll<0.5 ? 'healthy' : roll<0.8 ? 'moderate' : 'critical';
+  const p = {
+    healthy:  {sleep:+(6.5+Math.random()*2.5).toFixed(1), hr:Math.round(62+Math.random()*28),  water:+(1.8+Math.random()*1.5).toFixed(1), spo2:+(96+Math.random()*3).toFixed(1),  bp:Math.round(95+Math.random()*30),  temp:+(36.2+Math.random()*0.8).toFixed(1), stress:Math.round(1+Math.random()*3),  steps:Math.round(6500+Math.random()*6000)},
+    moderate: {sleep:+(3.5+Math.random()*2.5).toFixed(1), hr:Math.round(98+Math.random()*35),  water:+(0.8+Math.random()*0.8).toFixed(1), spo2:+(90+Math.random()*4).toFixed(1),  bp:Math.round(135+Math.random()*35), temp:+(37.5+Math.random()*1.5).toFixed(1), stress:Math.round(6+Math.random()*3),  steps:Math.round(1200+Math.random()*2500)},
+    critical: {sleep:+(1+Math.random()*2).toFixed(1),     hr:Math.round(142+Math.random()*30), water:+(0.2+Math.random()*0.4).toFixed(1), spo2:+(82+Math.random()*6).toFixed(1),  bp:Math.round(178+Math.random()*30), temp:+(39.6+Math.random()*1.2).toFixed(1), stress:Math.round(9+Math.random()*1),  steps:Math.round(100+Math.random()*500)},
+  };
+  return p[prof];
+}
+
+// ================================================================
+//  WEARABLE SIMULATION
+// ================================================================
+function bleConnect(vitals) {
+  const dev = DEVICES[selectedDevice];
+  const proto = dev.type==='monitor'?'HL7':'BLE';
+  log('info',`[${proto}] Scanning...`);
+  setTimeout(()=>log('ok',`[${proto}] Found: ${dev.name} | ${dev.firmware} | ${dev.id}`), 400);
+  setTimeout(()=>{ log('ok',`[${proto}] Connected.`); document.getElementById('bleDot').className='ble-dot connected'; document.getElementById('bleText').textContent=dev.id+' CONNECTED'; }, 800);
+  setTimeout(()=>log('info','[CHAN] HR · SpO2 · BP · Temp · Sleep · Water · Steps · GSR ... OK'), 1100);
+  setTimeout(()=>streamVitals(vitals), 1400);
+}
+
+function streamVitals(vitals) {
+  const fields=['hr','spo2','bp','temp','sleep','water','steps','stress'];
+  let i=0;
+  const iv=setInterval(()=>{
+    if(i>=fields.length){ clearInterval(iv); log('ok','[SENSOR] All channels read. Agent starting...'); startLiveUpdates(vitals); runAgentLoop(vitals); return; }
+    updateLiveVital(fields[i], vitals[fields[i]]);
+    log('info',`[SENSOR] ${fields[i].toUpperCase()} → ${vitals[fields[i]]}`);
+    i++;
+  }, 180);
+}
+
+function updateLiveVital(f,v) {
+  const el=document.getElementById(`live-${f}`); const bar=document.getElementById(`bar-${f}`); if(!el)return;
+  const ranges={hr:[20,220],spo2:[50,100],bp:[60,220],temp:[34,42],sleep:[0,12],water:[0,10],steps:[0,20000],stress:[0,10]};
+  const [mn,mx]=ranges[f]||[0,100];
+  const pct=Math.min(100,Math.max(0,((v-mn)/(mx-mn))*100));
+  el.textContent=f==='steps'?v.toLocaleString():v;
+  document.getElementById(`vc-${f}`).classList.add('live');
+  if(bar) bar.style.width=pct+'%';
+  const ab=checkAb(f,v);
+  el.style.color=ab===2?'var(--red)':ab===1?'var(--yellow)':'var(--green)';
+}
+
+function checkAb(f,v) {
+  const n={hr:[60,100],spo2:[95,100],bp:[90,130],temp:[36.1,37.2],sleep:[7,9],water:[2,3.5],steps:[7000,20000],stress:[0,4]};
+  const c={hr:[45,140],spo2:[90,100],bp:[60,180],temp:[35,39.5],sleep:[3,12],water:[0.5,10],steps:[0,20000],stress:[0,9]};
+  const [nlo,nhi]=n[f]||[0,999]; const [clo,chi]=c[f]||[0,999];
+  if(v<clo||v>chi) return 2; if(v<nlo||v>nhi) return 1; return 0;
+}
+
+function startLiveUpdates(base) {
+  if(wearableInterval) clearInterval(wearableInterval);
+  wearableInterval=setInterval(()=>{
+    updateLiveVital('hr',  Math.round(Math.max(20,base.hr  +rand(-3,3))));
+    updateLiveVital('spo2',Math.min(100,+(base.spo2+rand(-0.5,0.5)).toFixed(1)));
+    updateLiveVital('bp',  Math.round(Math.max(60,base.bp  +rand(-2,2))));
+    updateLiveVital('temp',+(base.temp+rand(-0.05,0.05)).toFixed(1));
+  },2000);
+  animateECG(base.hr);
+}
+
+function animateECG(hr) {
+  const line=document.getElementById('ecgLine'); const pts=[];
+  for(let x=0;x<=600;x+=2){ const ph=(x/600*4)%1; let y=20;
+    if(ph<0.05)y=20;else if(ph<0.08)y=10;else if(ph<0.11)y=30;
+    else if(ph<0.13)y=2;else if(ph<0.16)y=35;else if(ph<0.18)y=20;
+    else if(ph<0.22)y=15;else if(ph<0.25)y=22;
+    pts.push(`${x},${y}`); }
+  line.setAttribute('points',pts.join(' '));
+  let off=0; setInterval(()=>{ off=(off-2)%600; line.style.transform=`translateX(${off}px)`; },50);
+}
+
+// ================================================================
+//  TRUE AGENTIC LOOP — Claude autonomously picks every tool call
+// ================================================================
+async function runAgentLoop(vitals) {
+  const apiKey = document.getElementById('apiKey').value.trim();
+
+  const panel = document.getElementById('agentPanel');
+  panel.style.display = 'block';
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('agentSteps').innerHTML = '';
+  agentLoopCount = 0;
+  document.getElementById('loopCounter').textContent = '';
+
+  if (!apiKey) {
+    log('warn','[AGENT] No API key — cannot run real agentic loop.');
+    addStep('decision','⚠️ API Key Required',
+      'Add your Anthropic API key above. Without it, Claude cannot autonomously decide which tools to call. This is what makes it truly agentic — Claude is given a list of 9 tools and decides its own path every single time.',null);
+    hideLoading(); return;
+  }
+
+  log('info','[AGENT] Handing vitals to Claude agent. Loop starting...');
+  showThinking('Claude is reading the vitals data...');
+
+  const SYSTEM = `You are HealthGuard AI — a clinical triage agent. You have 9 medical tools available.
+
+Your task: analyze the patient vitals by calling tools in whatever order YOU decide is best. You are fully autonomous — no fixed sequence, no hardcoded path. Use your clinical judgment.
+
+GUIDANCE (not rules — you decide):
+- Start with check_vital_ranges to understand what you're dealing with
+- Call deeper tools only when the situation warrants it
+- Call classify_triage_stage when you have enough evidence
+- For Stage 2: call get_specialist_recommendations before generate_final_report
+- For Stage 3: call dispatch_emergency_services before generate_final_report
+- Always end by calling generate_final_report — this closes the loop
+
+STAGE THRESHOLDS:
+- Stage 1: HR 60-100, SpO2≥95%, BP 90-130, Temp 36.1-37.2°C, Sleep≥7h, Water≥1.5L
+- Stage 2: 2+ moderate deviations from normal
+- Stage 3: ANY of: HR>140 or <45, SpO2<90%, BP>180, Temp>39.5°C
+
+Be efficient. The patient is waiting.`;
+
+  const USER_MSG = `Vitals from ${DEVICES[selectedDevice].name} (${DEVICES[selectedDevice].id}):
+HR: ${vitals.hr} bpm | SpO2: ${vitals.spo2}% | BP: ${vitals.bp} mmHg | Temp: ${vitals.temp}°C
+Sleep: ${vitals.sleep} hrs | Water: ${vitals.water} L | Stress: ${vitals.stress}/10 | Steps: ${vitals.steps}
+
+Run your autonomous triage assessment.`;
+
+  // Full message history — this is the real agentic pattern
+  const messages = [{role:'user', content:USER_MSG}];
+  let finalReport = null;
+  let safetyLimit = 0;
+
+  // ── THE REAL LOOP ──────────────────────────────────────────────
+  // We keep calling Claude, feeding tool results back, until Claude
+  // stops on its own (stop_reason === 'end_turn'). Claude decides
+  // everything — which tools, in what order, when to stop.
+  // ──────────────────────────────────────────────────────────────
+  while (safetyLimit < 20) {
+    safetyLimit++;
+    showThinking(`Calling Claude... (iteration ${safetyLimit})`);
+
+    let resp;
+    try {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'x-api-key':apiKey,
+          'anthropic-version':'2023-06-01',
+          'anthropic-dangerous-direct-browser-access':'true'
+        },
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:1024,
+          system:SYSTEM,
+          tools:TOOL_DEFS,
+          messages:messages
+        })
+      });
+      if(!r.ok){ const e=await r.json(); throw new Error(e.error?.message||`HTTP ${r.status}`); }
+      resp = await r.json();
+    } catch(e) {
+      hideThinking();
+      log('error',`[AGENT] ${e.message}`);
+      addStep('decision','❌ API Error',`Error: ${e.message}. Check your API key and try again.`,null);
+      hideLoading(); return;
+    }
+
+    hideThinking();
+
+    // Push Claude's response into history
+    messages.push({role:'assistant', content:resp.content});
+
+    // Show any text Claude wrote (its internal reasoning)
+    for (const block of resp.content) {
+      if (block.type==='text' && block.text.trim()) {
+        addStep('thought','🧠 Claude Reasoning', block.text.trim(), null);
+        await sleep(250);
+      }
+    }
+
+    // Claude decided to stop — loop is done
+    if (resp.stop_reason==='end_turn') {
+      log('ok','[AGENT] Claude ended loop autonomously.');
+      break;
+    }
+
+    // Get all tool calls Claude chose this iteration
+    const toolCalls = resp.content.filter(b=>b.type==='tool_use');
+    if (!toolCalls.length) break;
+
+    // Execute each tool Claude chose and collect results
+    const toolResults = [];
+    for (const tc of toolCalls) {
+      agentLoopCount++;
+      document.getElementById('loopCounter').textContent = `${agentLoopCount} tool calls made`;
+
+      // Show what Claude decided to call
+      addStep('tool',
+        `Claude calls → ${tc.name}`,
+        `<code>${tc.name}()</code>  <span style="color:var(--muted);font-size:12px;">Reason: "${tc.input?.reason||'—'}"</span>`,
+        tc.name
+      );
+      await sleep(350);
+
+      // Show "executing" indicator
+      showThinking(`Running tool: ${tc.name}...`);
+      await sleep(450);
+      hideThinking();
+
+      // Actually run the tool
+      const result = executeTool(tc.name, tc.input, vitals);
+
+      // Show the result
+      addStep('result','👁️ Tool Result', result, null);
+      await sleep(250);
+
+      log('info',`[TOOL] ${tc.name} → ${result.substring(0,55)}...`);
+
+      // Capture the final report inputs if this was the last tool
+      if (tc.name==='generate_final_report') {
+        finalReport = tc.input;
+      }
+
+      toolResults.push({
+        type:'tool_result',
+        tool_use_id:tc.id,
+        content:result
+      });
+    }
+
+    // Feed ALL tool results back to Claude so it can decide next step
+    messages.push({role:'user', content:toolResults});
+    showThinking('Claude is processing results...');
+    await sleep(150);
+  }
+
+  hideThinking();
+
+  // Show final decision card
+  if (finalReport) {
+    const lbl = finalReport.stage===3?'🚨 STAGE 3 — CRITICAL':finalReport.stage===2?'⚠️ STAGE 2 — MODERATE':'✅ STAGE 1 — HEALTHY';
+    addStep('decision',
+      `${lbl} — Loop Complete`,
+      `Claude completed the triage in ${agentLoopCount} autonomous tool calls.\nHealth Score: ${finalReport.score}/100\n\n${finalReport.summary}`,
+      null
+    );
+    await sleep(400);
+    renderResult(finalReport, vitals);
+  } else {
+    addStep('decision','⚠️ No Final Report','Claude did not call generate_final_report. Try again.',null);
+    hideLoading();
+  }
+}
+
+// ================================================================
+//  RENDER RESULT
+// ================================================================
+function renderResult(report, vitals) {
+  const {stage,score,title,summary,specialists,ambulance} = report;
+  const panel=document.getElementById('resultPanel');
+  const cfg={
+    1:{cls:'stage1',bc:'s1',icon:'✅',lbl:'STAGE 1 — LOW DEVIATION',    sub:'Lifestyle correction recommended', bar:'var(--green)'},
+    2:{cls:'stage2',bc:'s2',icon:'⚠️',lbl:'STAGE 2 — MEDIUM DEVIATION', sub:'Medical consultation required',    bar:'var(--yellow)'},
+    3:{cls:'stage3',bc:'s3',icon:'🚨',lbl:'STAGE 3 — CRITICAL EMERGENCY',sub:'Emergency services dispatched',   bar:'var(--red)'},
+  }[stage]||{cls:'stage1',bc:'s1',icon:'✅',lbl:'STAGE 1',sub:'',bar:'var(--green)'};
+
+  panel.className=`result-panel ${cfg.cls}`;
+  document.getElementById('stageBadge').className=`stage-badge ${cfg.bc}`;
+  document.getElementById('stageBadge').innerHTML=`${cfg.icon} ${cfg.lbl}`;
+  document.getElementById('resultTitle').textContent=title;
+  document.getElementById('resultSubtitle').textContent=cfg.sub;
+  document.getElementById('scoreCircle').className=`health-score-circle ${cfg.bc}`;
+  document.getElementById('scoreNum').textContent=score;
+  document.getElementById('aiResponse').textContent=summary;
+  document.getElementById('extraContent').innerHTML='';
+  setTimeout(()=>{ const sb=document.getElementById('scoreBar'); sb.style.width=score+'%'; sb.style.background=`linear-gradient(90deg,${cfg.bar}88,${cfg.bar})`; },300);
+
+  // Stage 2 — doctors grid
+  if (stage===2 && specialists?.length) {
+    let docs=[];
+    specialists.forEach(s=>{ docs=docs.concat(DOCTORS_DB[s]||DOCTORS_DB.General); });
+    docs=[...new Map(docs.map(d=>[d.name,d])).values()].slice(0,3);
+    const grid=document.createElement('div'); grid.className='doctors-grid';
+    grid.innerHTML=`<div style="grid-column:1/-1;margin-top:16px;font-family:var(--font-display);font-size:16px;color:var(--yellow);letter-spacing:1px;">👨‍⚕️ Specialists — Selected by Agent</div>`;
+    docs.forEach(doc=>{ const c=document.createElement('div'); c.className='doctor-card';
+      c.innerHTML=`<div class="doctor-name">${doc.name}</div><div class="doctor-spec">${doc.specialty}</div><div class="doctor-dist">📍 ${doc.distance} · ${doc.hospital}</div><button class="btn-send-report" onclick="sendReport(this,'${doc.name}')">📤 SEND REPORT</button>`;
+      grid.appendChild(c); });
+    document.getElementById('extraContent').appendChild(grid);
+  }
+
+  // Stage 3 — ambulance
+  if (stage===3) {
+    const unit=ambulance?.unit||'AMB-'+Math.floor(Math.random()*90+10);
+    const eta=ambulance?.eta_min||Math.floor(Math.random()*5+3);
+    const er=ambulance?.er||'Yashoda Hospital Emergency';
+    const c=document.createElement('div'); c.className='ambulance-card';
+    c.innerHTML=`<div class="amb-icon">🚑</div><div class="amb-details"><div class="amb-title">EMERGENCY — AGENT DISPATCHED</div><div class="amb-row">Unit: <span>${unit}</span></div><div class="amb-row">ETA: <span>${eta} min</span></div><div class="amb-row">ER: <span>${er}</span></div><div class="amb-row">Vitals: <span>Transmitted</span></div></div><button class="btn-confirm-amb" onclick="confirmAmb(this)">🚨 CONFIRM DISPATCH</button>`;
+    document.getElementById('extraContent').appendChild(c);
+    log('error',`[EMERGENCY] Agent dispatched ${unit}. ETA ${eta} min.`);
+  }
+
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+  log('ok',`[DONE] Stage ${stage} | Score ${score}/100 | ${agentLoopCount} tool calls`);
+  hideLoading();
+}
+
+// ================================================================
+//  UI
+// ================================================================
+function addStep(type, header, body, toolName) {
+  const panel=document.getElementById('agentSteps');
+  const cls={thought:'step-thought',tool:'step-tool',result:'step-result',decision:'step-decision'}[type]||'step-thought';
+  const icon={thought:'🧠',tool:'⚡',result:'👁️',decision:'✅'}[type]||'•';
+  const tag={thought:'REASONING',tool:'TOOL CALL',result:'OBSERVATION',decision:'FINAL DECISION'}[type]||type;
+  const d=document.createElement('div'); d.className=`step-card ${cls}`;
+  d.innerHTML=`<div class="step-header"><span>${icon}</span><span class="step-tag">${tag}</span><span class="step-title" style="margin-left:6px;">${header}</span>${toolName?`<span class="step-tool-badge">${toolName}</span>`:''}</div><div class="step-body">${body.replace(/\n/g,'<br/>')}</div>`;
+  panel.appendChild(d); panel.scrollTop=panel.scrollHeight;
+}
+
+function showThinking(msg){ const el=document.getElementById('agentThinking'); document.getElementById('thinkingText').textContent=msg; el.style.display='flex'; }
+function hideThinking()   { document.getElementById('agentThinking').style.display='none'; }
+
+function runAnalysis() {
+  if(selectedDevice===null){ log('warn','[WARN] Select a device first.'); return; }
+  document.getElementById('resultPanel').style.display='none';
+  document.getElementById('agentPanel').style.display='none';
+  document.getElementById('agentSteps').innerHTML='';
+  showLoading('Scanning for device...'); document.getElementById('analyzeBtn').disabled=true;
+  const vitals=generateRandomVitals();
+  log('info',`[DEVICE] Pulling from ${DEVICES[selectedDevice].name}...`);
+  bleConnect(vitals);
+}
+
+function resetAll() {
+  if(wearableInterval) clearInterval(wearableInterval);
+  document.getElementById('resultPanel').style.display='none';
+  document.getElementById('agentPanel').style.display='none';
+  document.getElementById('agentSteps').innerHTML='';
+  document.getElementById('bleDot').className='ble-dot';
+  document.getElementById('bleText').textContent='DISCONNECTED';
+  document.getElementById('analyzeBtn').disabled=false;
+  document.getElementById('loopCounter').textContent='';
+  hideLoading(); hideThinking();
+  ['hr','spo2','bp','temp','sleep','water','steps','stress'].forEach(f=>{
+    const el=document.getElementById(`live-${f}`); if(el){el.textContent='--';el.style.color='var(--accent)';}
+    const bar=document.getElementById(`bar-${f}`); if(bar) bar.style.width='0%';
+    document.getElementById(`vc-${f}`)?.classList.remove('live');
+  });
+  document.getElementById('ecgLine').setAttribute('points','');
+  clearLog(); log('info','[SYSTEM] Reset. Ready.');
+}
+
+function sendReport(btn,name){ btn.textContent='✅ SENT'; btn.className='btn-send-report sent'; btn.disabled=true; log('ok',`[REPORT] Sent to ${name}.`); }
+function confirmAmb(btn){ btn.textContent='✅ DISPATCHED'; btn.style.background='var(--green)'; btn.style.color='#000'; btn.disabled=true; log('ok','[AMBULANCE] Confirmed.'); }
+function log(type,msg){ const p=document.getElementById('logPanel'); const d=document.createElement('div'); d.className=`log-line ${type}`; d.textContent=msg; p.appendChild(d); p.scrollTop=p.scrollHeight; }
+function clearLog(){ document.getElementById('logPanel').innerHTML=''; }
+function showLoading(msg){ document.getElementById('loadingText').textContent=msg; document.getElementById('loadingOverlay').style.display='flex'; }
+function hideLoading(){ document.getElementById('loadingOverlay').style.display='none'; document.getElementById('analyzeBtn').disabled=false; }
+function rand(a,b){ return Math.random()*(b-a)+a; }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+window.onload=()=>{ const l=document.getElementById('ecgLine'); l.setAttribute('points',Array.from({length:300},(_,i)=>`${i*2},20`).join(' ')); };
+</script>
+</body>
+</html>
